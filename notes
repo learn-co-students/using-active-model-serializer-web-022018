@@ -1,0 +1,62 @@
+notes
+
+serializer generate
+https://learn.co/tracks/web-development-immersive-2-0-module-three/rails-apis/building-apis/using-active-model-serializer
+rails g serializer post
+  console printed: create  app/serializers/post_serializer.rb
+  class PostSerializer < ActiveModel::Serializer
+    attributes :id, :title, :description
+    belongs_to :author
+  end
+if we want an author then we need author serializer
+  rails g serializer author
+  class AuthorSerializer < ActiveModel::Serializer
+    attributes :id, :name
+    has_many :posts
+  end
+JSON really just needs an author's name, we might want to do a simpler serialization of the author for those purposes.
+Let's make a new PostAuthorSerializer:
+  rails g serializer post_author
+  class PostAuthorSerializer < ActiveModel::Serializer
+   attributes :name
+  end
+  NOW WE CHANGE PostSerializer
+  class PostSerializer < ActiveModel::Serializer
+    attributes :id, :title, :description
+    belongs_to :author, serializer: PostAuthorSerializer <-change
+  end
+***********************************************
+to_json method to render an object as JSON.
+ exclude data as well, using the only option
+
+   # posts_controller
+# ...
+  def show
+    @post = Post.find(params[:id])
+    respond_to do |format|
+      format.html { render :show }
+      format.json { render json: @post.to_json(only: [:title, :description, :id],
+                              include: [author: { only: [:name]}]) }
+    end
+  end
+******
+how to request json rather than html
+// $.get("/products/" + nextId + "/data", function(data) { //HTML
+$.get("/products/" + nextId + ".json", function(data) { //JSON
+see full example below **********
+script type="text/javascript" charset="utf-8">
+$(function () {
+  $(".js-next").on("click", function() {
+    var nextId = parseInt($(".js-next").attr("data-id")) + 1;
+    // $.get("/products/" + nextId + "/data", function(data) {
+    $.get("/products/" + nextId + ".json", function(data) {
+      $(".productName").text(data["name"]);
+      $(".productPrice").text(data["price"]);
+      $(".productDescription").text(data["description"]);
+      $(".productInventory").text(data["inventory"]);
+      // re-set the id to current on the link
+      $(".js-next").attr("data-id", data["id"]);
+    });
+  });
+});
+</script>
